@@ -93,6 +93,8 @@ Klik dua kali:
 
 - `JALANKAN.bat` — menu interaktif (semua pilihan)
 - `CEK-POIN.bat` — cek status semua akun, langsung tampil lalu berhenti
+- `LIHAT-UPGRADE.bat` — rencana upgrade (dry-run, tidak membeli poin)
+- `LIHAT-JADWAL.bat` — riwayat 10 run terakhir + jadwal otomatis
 
 ### Command line
 
@@ -100,10 +102,21 @@ Klik dua kali:
 node index.js            # menu interaktif
 node index.js --daily    # daily + upgrade otomatis (cocok untuk cron)
 node index.js --status   # status semua akun (read-only)
+node index.js --history  # riwayat run terakhir
 node index.js --upgrade  # upgrade otomatis saja
 node index.js --plan     # rencana upgrade, tidak membeli
 node index.js --stats    # statistik publik project
 ```
+
+### Jadwal otomatis
+
+Sudah terpasang di cron Hermes: **job `9chain-daily`, setiap hari 08:00 WIB**
+(`no_agent` — menjalankan `9chain_daily.py` → `node index.js --daily`, output disimpan lokal).
+
+- Lihat hasil: `LIHAT-JADWAL.bat` atau `node index.js --history`
+- File hasil mentah: `data/last-run.json` (60 run terakhir)
+- Jam 08:00 WIB = 01:00 UTC, jadi daily gift dan tap sudah reset untuk hari baru
+- Kalau mau ubah jam: `cronjob_manage action=update job_id=9905dadcab74 schedule="every day at 9am"`
 
 ### Menu interaktif
 
