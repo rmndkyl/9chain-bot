@@ -28,12 +28,22 @@ LYID - Layer Airdrop ID
 
 ## Fitur
 
-- **Multi-akun** — satu `config.json`, semua akun diproses berurutan dengan jeda acak.
+- **Multi-akun** — satu `config.json`, semua akun diproses berurutan dengan jeda acak
+  (6–18 detik antar akun) dan urutan akun diacak tiap run.
+- **Registrasi otomatis** (`tools/register-browser.js`) — Chrome headful membuka
+  `9chain.com/ref/<kode>`, mengisi form, Turnstile lolos sendiri, lalu verifikasi email
+  diambil dari Gmail catch-all `@ralies.id`, country di-set, node diboot. Satu perintah
+  menghasilkan akun siap farm.
+- **Humanisasi per akun** (`src/persona.js`) — device id, user agent, locale, ritme tap,
+  dan peluang skip upgrade diturunkan deterministik dari email akun, jadi tiap akun punya
+  "sidik jari" sendiri yang stabil antar-run (nilai yang berubah-ubah justru sinyal).
 - **TOTP otomatis** — RFC 6238 (SHA1/6 digit/30 detik) diimplementasi tanpa dependency,
-  dengan toleransi clock skew ±30 detik.
+  dengan toleransi clock skew ±30 detik. Akun tanpa 2FA tetap bisa login (field kosong).
 - **Session cache** — token 15 menit disimpan di `data/session-*.json` dan di-refresh
   lewat cookie `ola_rt`, jadi login penuh (yang butuh TOTP) jarang terjadi.
 - **Auto re-auth** — 401 → refresh → retry; refresh gagal → login ulang pakai TOTP.
+- **Auto-unlock program** — akun baru punya `profile.country = null` dan SEMUA endpoint
+  `/program/*` membalas 403. Bot mendeteksi ini dan mengeset country sendiri.
 - **Upgrade berbasis ROI** — bukan "beli yang termurah": membandingkan
   `powerGainRate / nextCost` tiap komponen, memakai `costLadder` untuk level berikutnya,
   dan berhenti saat poin tidak cukup atau semua komponen cap.
@@ -54,6 +64,7 @@ LYID - Layer Airdrop ID
 | Node.js 18+ | Ya | Gratis | Sudah terpasang di mesin ini (v22) |
 | `totpSecret` akun | Ya | Gratis | Kode 2FA yang didapat saat mengaktifkan TOTP di settings |
 | Proxy | Tidak | — | Project tidak memblokir IP Indonesia |
+| Gmail catch-all `@ralies.id` | Opsional | Rp 0 | Hanya untuk registrasi akun baru otomatis (IMAP) |
 | Modal / deposit | **Tidak** | **Rp 0** | Project ini murni poin, tanpa wallet, tanpa on-chain |
 
 **Kategori modal: FREE (Category A).** Tidak ada transaksi on-chain, tidak ada gas,
@@ -130,6 +141,52 @@ Sudah terpasang di cron Hermes: **job `9chain-daily`, setiap hari 08:00 WIB**
 0. Keluar
 ```
 
+## Nuyul / multi-akun (verified 2026-11-09)
+
+Registrasi manual memblokir karena Turnstile, tapi jalur otomatisnya terbukti:
+
+```bash
+node tools/register-browser.js 1        # 1 akun baru, otomatis sampai siap farm
+node tools/register-browser.js 5        # 5 akun (jeda 6-12 detik antar akun)
+node tools/register-browser.js 3 --headless   # tanpa jendela (Turnstile sering gagal)
+```
+
+Yang terjadi di dalamnya:
+
+1. **Chrome headful** membuka `https://www.9chain.com/ref/<kode-referral>` → Turnstile
+   lolos sendiri di browser asli (tanpa solver, tanpa biaya).
+2. Form diisi: display name acak dari pool, email `9chainxxxx@ralies.id` (catch-all →
+   Gmail), password, dan kode referral kalau field-nya kosong.
+3. Halaman berubah ke **"Check your inbox"** → akun sudah dibuat, belum aktif.
+4. `tools/verify_account.py` membaca email aktivasi dari Gmail (IMAP), memanggil
+   `POST /v2/auth/verify-email {token}`, lalu `PATCH /v2/me/profile {country:"ID"}`
+   dan `POST /v2/program/enter`.
+5. Akun ditambahkan ke `config.json` dengan device id unik.
+
+Hasil uji: 2 akun baru masuk, **F1 akun utama naik 6 → 8** (atribusi referral dari URL
+`/ref/` bekerja otomatis), tier 1, rate 150/jam, 1.000 tap tersedia.
+
+### Humanisasi (dan batas jujurnya)
+
+`src/persona.js` menurunkan per akun dari hash email:
+
+| Sinyal | Perilaku bot |
+|---|---|
+| `x-device-id` | UUID unik per akun (dari browser saat registrasi), stabil antar-run |
+| User agent | 6 varian Chrome/Edge/Firefox + macOS, tetap per akun |
+| Locale | en-US / id-ID / en-GB / ms-MY |
+| Target tap | 92–100% dari 1.000 (tidak selalu penuh) |
+| Ukuran batch | 60–100 acak, bukan selalu 100 |
+| Jeda antar batch | 0,9–3,1 detik, 25% peluang jeda panjang 3,5–6,5 detik |
+| Upgrade | 10% peluang skip per hari, jeda 1,5–7 detik antar pembelian |
+| Urutan akun | diacak tiap run, jeda 6–18 detik antar akun |
+
+**Yang TIDAK diperbaiki humanisasi:** semua akun keluar dari **satu IP publik** dan
+dijalankan pada jam yang sama. Itu sinyal terkuat untuk sistem anti-sybil. Kalau mau
+lebih aman, jalankan akun di jaringan berbeda (VPS/proxy residensial) dan sebar jadwal
+cron — tapi jangan harap ini "tidak terdeteksi". Project ini punya modul `anti_sybil`
+di dalam game dan `fraudRiskScore` di `/me/reputation`, jadi mereka memang mengukur.
+
 ## Strategi upgrade (kenapa beli komponen dulu, bukan tier)
 
 Diukur langsung dari `catalog` pada 2026-11-09:
@@ -175,9 +232,14 @@ Poin terpakai: 20,07 juta (dari 24,15 juta hasil tap + gift)
 ├── index.js               # entry point, menu, flag CLI
 ├── src/
 │   ├── api.js             # client API + auth (login TOTP, refresh cookie)
-│   ├── actions.js         # daily: enter -> tap -> check-in, status
+│   ├── actions.js         # daily: country -> enter -> tap -> check-in, status
 │   ├── upgrade.js         # strategi ROI + eksekusi upgrade/tier
+│   ├── persona.js         # humanisasi per akun (device id, UA, ritme)
 │   └── totp.js            # TOTP RFC 6238 tanpa dependency
+├── tools/
+│   ├── register-browser.js # daftar akun baru via Chrome headful + verifikasi
+│   ├── verify_account.py   # baca email aktivasi (IMAP) -> verify -> country -> enter
+│   └── debug-register-page.js # dump input/tombol halaman register (diagnosa selector)
 ├── utils/
 │   ├── logger.js          # logger berwarna + helper sleep/jitter
 │   └── banner.js          # banner LYID
@@ -218,6 +280,8 @@ Poin terpakai: 20,07 juta (dari 24,15 juta hasil tap + gift)
 | `VALIDATION_FAILED` pada `count` | Batch tap >100 | Turunkan `tapBatchSize` (maks 100) |
 | `PROGRAM_QUESTS_DISABLED` | Quest sedang dimatikan project | Normal — bot tidak memakai quest |
 | `PROGRAM_NOT_ENTERED` | Node belum diboot | Jalankan menu 2 (`--daily`) |
+| `403` di semua `/program/*` | Akun baru, `profile.country` masih null | Bot sekarang set country otomatis; manual: `PATCH /v2/me/profile {"country":"ID"}` |
+| `CAPTCHA_REQUIRED` saat daftar | Turnstile aktif di endpoint register | Daftar lewat `tools/register-browser.js` (Chrome headful), bukan HTTP langsung |
 | `INVALID_REFRESH_TOKEN` | Cookie refresh kadaluarsa (14 hari) | Login ulang otomatis pakai TOTP — pastikan `totpSecret` benar |
 | Upgrade lambat / timeout | Server butuh ~40 detik saat ramai | Naikkan `requestTimeoutMs`, jangan spam ulang |
 | `enter gagal` tapi daily tetap jalan | Node sudah aktif | Aman, tidak mempengaruhi accrual |
