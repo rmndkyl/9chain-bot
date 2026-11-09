@@ -106,6 +106,7 @@ Klik dua kali:
 - `CEK-POIN.bat` — cek status semua akun, langsung tampil lalu berhenti
 - `LIHAT-UPGRADE.bat` — rencana upgrade (dry-run, tidak membeli poin)
 - `LIHAT-JADWAL.bat` — riwayat 10 run terakhir + jadwal otomatis
+- `DAFTAR-AKUN.bat` — daftar akun baru (buka Chrome, isi form, verifikasi otomatis)
 
 ### Command line
 
