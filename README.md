@@ -14,6 +14,24 @@ LYID - Layer Airdrop ID
 
 ---
 
+## Proof it runs
+
+Every screenshot below is the live output of the bot's own read-only commands on this machine — not a mockup. Account names and emails are masked; the numbers are untouched.
+
+**`--status` reads every account straight from 9Chain's API: node tier, points/hour, unspent taps, team points, next-tier cost.**
+
+![`--status` reads every account straight from 9Chain's API: node tier, points/hour, unspent taps, team points, next-tier cost.](docs/screenshots/status.png)
+
+**`--plan` is a dry run: it ranks upgrades by ROI per point spent and buys nothing — the `[dry-run]` lines below prove that.**
+
+![`--plan` is a dry run: it ranks upgrades by ROI per point spent and buys nothing — the `[dry-run]` lines below prove that.](docs/screenshots/plan.png)
+
+**`--history` is written by the bot itself after every run: what type, which account, rate before and after, and what it actually bought.**
+
+![`--history` is written by the bot itself after every run: what type, which account, rate before and after, and what it actually bought.](docs/screenshots/history.png)
+
+---
+
 ## Apa yang dikerjakan bot ini
 
 | Langkah | Endpoint | Keterangan |
