@@ -1,4 +1,25 @@
-# 9Chain Community Bot — LYID
+# 9Chain Community Bot
+
+**Versi:** 1.0.0 · **Harga:** Rp 65.000 (~$4) · **Kontak pembelian:** [@rmndkyl](https://t.me/rmndkyl)
+
+Automation for **9Chain Community** (`9chain.com`) — the community hub of the 9Chain Layer 1 project. Runs the daily loop automatically: boot the simulated node, spend all 1,000 taps, open the daily gift, and reinvest LOVE9 Points into the highest-ROI node component upgrades.
+
+## Kebutuhan
+
+| Item | Detail |
+|---|---|
+| Runtime | Node.js 18+ |
+| Wallet | EVM / sesuai chain proyek (kamu sendiri) |
+| Proxy | tidak perlu |
+| Captcha | tidak perlu |
+| Akses | akun proyek yang kamu kelola sendiri |
+
+## Pembayaran
+
+E-Wallet: DANA / GoPay / ShopeePay · Bank: BCA / Seabank · Crypto: contact for wallet address.
+Pembeli menghubungi [@rmndkyl](https://t.me/rmndkyl), kirim bukti transfer, lalu terima license key.
+
+---
 
 Automation for **9Chain Community** (`9chain.com`) — the community hub of the 9Chain
 Layer 1 project. Runs the daily loop automatically: boot the simulated node, spend all
@@ -268,7 +289,6 @@ Poin terpakai: 20,07 juta (dari 24,15 juta hasil tap + gift)
 ├── JALANKAN.bat           # menu klik-dan-jalan
 ├── CEK-POIN.bat           # cek status cepat
 ├── README.md
-└── CHECKPOINT.md
 ```
 
 ## Project info
